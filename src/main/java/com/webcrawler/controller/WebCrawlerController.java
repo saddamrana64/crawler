@@ -18,7 +18,8 @@ public class WebCrawlerController {
 
 	@RequestMapping(value = "/", method = RequestMethod.POST)
 	public Node get(@RequestBody Model model) {
-		return service.getLinks(model.getURL());
+		Node node = service.getLinks(model.getURL(), model.getInnerItems(), model.getTotalProcessedItems());
+		return node;
 	}
 
 }

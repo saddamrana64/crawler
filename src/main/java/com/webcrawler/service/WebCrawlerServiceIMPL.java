@@ -21,10 +21,16 @@ public class WebCrawlerServiceIMPL implements WebCrawlerService {
 
 	private Set<String> links;
 	private Node root;
+	private int innerItems;
+	private int totalProcessedItems;
+	private String domain;
 
-	public Node getLinks(String URL) {
+	public Node getLinks(String URL, int innerItems, int totalProcessedItems) {
+		domain = URL.substring(URL.indexOf('.'));
+		domain = domain.substring(1, domain.indexOf('/'));
 		Node pointer = null;
-
+		this.innerItems = innerItems > 0 ? innerItems: Integer.MAX_VALUE;
+		this.totalProcessedItems = totalProcessedItems > 0 ? totalProcessedItems: Integer.MAX_VALUE;
 		links = new HashSet<String>();
 		root = new Node(URL);
 
@@ -36,6 +42,7 @@ public class WebCrawlerServiceIMPL implements WebCrawlerService {
 			List<Node> nodeList = getNestedNodes(pointer);
 			queue.addAll(nodeList);
 			pointer.setNodeList(nodeList);
+			if(links.size() >= this.totalProcessedItems) return root;
 		}
 		return root;
 
@@ -43,21 +50,21 @@ public class WebCrawlerServiceIMPL implements WebCrawlerService {
 
 	private List<Node> getNestedNodes(Node URL) {
 
-		List<Node> nodeList = new ArrayList<Node>(41);
+		List<Node> nodeList = new ArrayList<Node>();
 
 		if (links.add(URL.getData())) {
 			try {
 
 				Document document = Jsoup.connect(URL.getData()).get();
-				Elements linksOnPage = document.select("a[href]");
-
-				for (Element page : linksOnPage) {
-
-					nodeList.add(new Node(page.attr("abs:href")));
+				Set<String> linkSet = new HashSet<String>(document.select("a[href]").eachAttr("abs:href"));
+				for (String page : linkSet) {
+					if(nodeList.size() > this.innerItems) return nodeList;
+					if(!links.contains(page) && page.contains(domain))
+					nodeList.add(new Node(page));
 				}
 
 			} catch (IOException e) {
-				System.err.println("For '" + URL + "': " + e.getMessage());
+				System.err.println("For '" + URL.getData() + "': " + e.getMessage());
 			}
 		}
 		return nodeList;
